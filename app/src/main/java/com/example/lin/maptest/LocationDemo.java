@@ -14,21 +14,31 @@ import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
+import com.baidu.mapapi.VersionInfo;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
+import com.baidu.mapapi.map.BitmapDescriptorFactory;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationConfiguration.LocationMode;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.search.core.SearchResult;
+import com.baidu.mapapi.search.geocode.GeoCodeOption;
+import com.baidu.mapapi.search.geocode.GeoCodeResult;
+import com.baidu.mapapi.search.geocode.GeoCoder;
+import com.baidu.mapapi.search.geocode.OnGetGeoCoderResultListener;
+import com.baidu.mapapi.search.geocode.ReverseGeoCodeResult;
 
 /**
  * 此demo用来展示如何结合定位SDK实现定位，并使用MyLocationOverlay绘制定位位置 同时展示如何使用自定义图标绘制并点击时弹出泡泡
  * 
  */
-public class LocationDemo extends Activity {
+public class LocationDemo extends Activity implements
+        OnGetGeoCoderResultListener {
     String TAG = "LocationDemo";
     // 定位相关
 	LocationClient mLocClient;
@@ -36,9 +46,10 @@ public class LocationDemo extends Activity {
 	private LocationMode mCurrentMode;
 	BitmapDescriptor mCurrentMarker;
 
-	MapView mMapView;
-	BaiduMap mBaiduMap;
 
+    GeoCoder mSearch = null; // 搜索模?，也可去掉地?模??立使用
+    BaiduMap mBaiduMap = null;
+    MapView mMapView = null;
 	// UI相关
 	OnCheckedChangeListener radioButtonListener;
 	Button requestLocButton;
@@ -105,6 +116,7 @@ public class LocationDemo extends Activity {
 
 		// 地图初始化
 		mMapView = (MapView) findViewById(R.id.bmapView);
+
 		mBaiduMap = mMapView.getMap();
 		// 开启定位图层
 		mBaiduMap.setMyLocationEnabled(true);
@@ -117,12 +129,17 @@ public class LocationDemo extends Activity {
 		option.setScanSpan(1000);
 		mLocClient.setLocOption(option);
 		mLocClient.start();
+        // 初始化搜索模?，注?事件?听
+        mSearch = GeoCoder.newInstance();
+        mSearch.setOnGetGeoCodeResultListener(this);
 	}
 public void TEST(View V)
 {
     BDLocation location;
-
-    Toast.makeText(getApplicationContext(), "11111",
+    mSearch.geocode(new GeoCodeOption().city(
+            "上海").address(
+            "中山北路二段"));
+    Toast.makeText(getApplicationContext(), VersionInfo.getApiVersion(),
             Toast.LENGTH_SHORT).show();
 }
 
@@ -183,5 +200,39 @@ public void TEST(View V)
 		mMapView = null;
 		super.onDestroy();
 	}
+    @Override
+    public void onGetGeoCodeResult(GeoCodeResult result) {
+        if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
+            Toast.makeText(this, "onGetGeoCodeResult抱歉", Toast.LENGTH_LONG)
+                    .show();
+            return;
+        }
+        mBaiduMap.clear();
+        mBaiduMap.addOverlay(new MarkerOptions().position(result.getLocation())
+                .icon(BitmapDescriptorFactory
+                        .fromResource(R.drawable.icon_marka)));
+        mBaiduMap.setMapStatus(MapStatusUpdateFactory.newLatLng(result
+                .getLocation()));
+        String strInfo = String.format("?度：%f ?度：%f",
+                result.getLocation().latitude, result.getLocation().longitude);
+        Toast.makeText(this, strInfo, Toast.LENGTH_LONG).show();
+    }
 
+    @Override
+    public void onGetReverseGeoCodeResult(ReverseGeoCodeResult result) {
+        if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
+            Toast.makeText(this, "Sorry! Not found!", Toast.LENGTH_LONG)
+                    .show();
+            return;
+        }
+        mBaiduMap.clear();
+        mBaiduMap.addOverlay(new MarkerOptions().position(result.getLocation())
+                .icon(BitmapDescriptorFactory
+                        .fromResource(R.drawable.icon_marka)));
+        mBaiduMap.setMapStatus(MapStatusUpdateFactory.newLatLng(result
+                .getLocation()));
+        Toast.makeText(this, result.getAddress(),
+                Toast.LENGTH_LONG).show();
+
+    }
 }
