@@ -6,7 +6,6 @@ import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.RadioGroup;
 import android.widget.RadioGroup.OnCheckedChangeListener;
 import android.widget.Toast;
 
@@ -25,6 +24,7 @@ import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationConfiguration.LocationMode;
 import com.baidu.mapapi.map.MyLocationData;
+import com.baidu.mapapi.map.offline.MKOfflineMap;
 import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.search.core.SearchResult;
 import com.baidu.mapapi.search.geocode.GeoCodeOption;
@@ -40,6 +40,10 @@ import com.baidu.mapapi.search.geocode.ReverseGeoCodeResult;
 public class LocationDemo extends Activity implements
         OnGetGeoCoderResultListener {
     String TAG = "LocationDemo";
+    private static final LatLng GEO_BEIJING = new LatLng(39.945, 116.404);
+    private static final LatLng GEO_SHANGHAI = new LatLng(31.227, 121.481);
+    private static final LatLng GEO_GUANGZHOU = new LatLng(23.155, 113.264);
+    private static final LatLng GEO_SHENGZHENG = new LatLng(22.560, 114.064);
     // 定位相关
 	LocationClient mLocClient;
 	public MyLocationListenner myListener = new MyLocationListenner();
@@ -91,28 +95,28 @@ public class LocationDemo extends Activity implements
 		};
 		requestLocButton.setOnClickListener(btnClickListener);
 
-		RadioGroup group = (RadioGroup) this.findViewById(R.id.radioGroup);
-		radioButtonListener = new OnCheckedChangeListener() {
-			@Override
-			public void onCheckedChanged(RadioGroup group, int checkedId) {
-				if (checkedId == R.id.defaulticon) {
-					// 传入null则，恢复默认图标
-					mCurrentMarker = null;
-					mBaiduMap
-							.setMyLocationConfigeration(new MyLocationConfiguration(
-									mCurrentMode, true, null));
-				}
-				if (checkedId == R.id.customicon) {
-					// 修改为自定义marker
-//					mCurrentMarker = BitmapDescriptorFactory
-//							.fromResource(R.drawable.icon_geo);
-					mBaiduMap
-							.setMyLocationConfigeration(new MyLocationConfiguration(
-									mCurrentMode, true, mCurrentMarker));
-				}
-			}
-		};
-		group.setOnCheckedChangeListener(radioButtonListener);
+//		RadioGroup group = (RadioGroup) this.findViewById(R.id.radioGroup);
+//		radioButtonListener = new OnCheckedChangeListener() {
+//			@Override
+//			public void onCheckedChanged(RadioGroup group, int checkedId) {
+//				if (checkedId == R.id.defaulticon) {
+//					// 传入null则，恢复默认图标
+//					mCurrentMarker = null;
+//					mBaiduMap
+//							.setMyLocationConfigeration(new MyLocationConfiguration(
+//									mCurrentMode, true, null));
+//				}
+//				if (checkedId == R.id.customicon) {
+//					// 修改为自定义marker
+////					mCurrentMarker = BitmapDescriptorFactory
+////							.fromResource(R.drawable.icon_geo);
+//					mBaiduMap
+//							.setMyLocationConfigeration(new MyLocationConfiguration(
+//									mCurrentMode, true, mCurrentMarker));
+//				}
+//			}
+//		};
+//		group.setOnCheckedChangeListener(radioButtonListener);
 
 		// 地图初始化
 		mMapView = (MapView) findViewById(R.id.bmapView);
@@ -121,19 +125,57 @@ public class LocationDemo extends Activity implements
 		// 开启定位图层
 		mBaiduMap.setMyLocationEnabled(true);
 		// 定位初始化
-		mLocClient = new LocationClient(this);
-		mLocClient.registerLocationListener(myListener);
-		LocationClientOption option = new LocationClientOption();
-		option.setOpenGps(true);// 打开gps
-		option.setCoorType("bd09ll"); // 设置坐标类型
-		option.setScanSpan(1000);
-		mLocClient.setLocOption(option);
-		mLocClient.start();
+        try {
+            // 地?初始化
+            mMapView = (MapView) findViewById(R.id.bmapView);
+            mBaiduMap = mMapView.getMap();
+            // ??定位??
+            mBaiduMap.setMyLocationEnabled(true);
+
+
+            mLocClient = new LocationClient(this);
+            mLocClient.registerLocationListener(myListener);
+            LocationClientOption option = new LocationClientOption();
+            option.setOpenGps(true);// 打开gps
+            option.setCoorType("bd09ll"); // 设置坐标类型
+            option.setScanSpan(1000);
+            option.setProdName("Benny");
+            mLocClient.setLocOption(option);
+            mLocClient.start();
+            if (mLocClient != null && mLocClient.isStarted()) {
+                mLocClient.requestLocation();
+            }
+        }
+        catch(Exception E)
+        {
+            Log.i(TAG,E.toString());
+        }
+        mLocClient.requestLocation();
+        MapStatusUpdate u4 = MapStatusUpdateFactory.newLatLng(GEO_SHANGHAI);
+        mCurrentMarker = BitmapDescriptorFactory
+                .fromResource(R.drawable.icon_geo);
+        mBaiduMap.setMyLocationConfigeration(new MyLocationConfiguration(
+                LocationMode.NORMAL, true,mCurrentMarker ));
+        mBaiduMap.addOverlay(new MarkerOptions().position(GEO_SHANGHAI)
+                .icon(BitmapDescriptorFactory
+                        .fromResource(R.drawable.icon_marka)));
+//        mBaiduMap.setMapStatus(u4);
+
         // 初始化搜索模?，注?事件?听
         mSearch = GeoCoder.newInstance();
         mSearch.setOnGetGeoCodeResultListener(this);
 	}
-public void TEST(View V)
+    public void start(View view) {
+        int cityid = 289;
+        MKOfflineMap mOffline = null;
+        mOffline.start(cityid);
+//        clickLocalMapListButton(null);
+        Toast.makeText(this, "?始下?离?地?. cityid: " + cityid, Toast.LENGTH_SHORT)
+                .show();
+//        updateView();
+    }
+
+    public void TEST(View V)
 {
     BDLocation location;
     mSearch.geocode(new GeoCodeOption().city(
